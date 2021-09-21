@@ -4,13 +4,11 @@ import { types, getSnapshot, applySnapshot } from "mobx-state-tree";
 import { observer } from "mobx-react";
 import { values } from "mobx";
 
-let id = 1;
-const randomId = () => ++id;
+const randomId = () => Math.floor(Math.random() * 1000).toString(36);
 
 // entity model for todo
 const Todo = types
   .model({
-    id: types.identifierNumber,
     name: types.optional(types.string, ""),
     done: types.optional(types.boolean, false)
   })
@@ -38,10 +36,20 @@ const RootStore = types
     users: types.map(User),
     todos: types.optional(types.map(Todo), {})
   })
+  .views(self => ({
+    // returns number of incomplete tasks
+    get pendingCount() {
+      return values(self.todos).filter(todo => !todo.done).length;
+    },
+    // returns number of complete tasks
+    get completedCount() {
+      return values(self.todos).filter(todo => todo.done).length;
+    }
+  }))
   .actions(self => {
     // create a new todo for the todo list
     function addTodo (id, name) {
-      self.todos.set(id, Todo.create({ id, name }));
+      self.todos.set(id, Todo.create({ name }));
     }
 
     return { addTodo };
@@ -53,7 +61,6 @@ const store = RootStore.create({
   users: {},
   todos: {
     "1": {
-      id: id,
       name: "Eat a cake",
       done: true
     }
@@ -87,6 +94,12 @@ const TodoView = observer(props => (
   </div>
 ));
 
+const TodoCounterView = observer(props => (
+  <div>
+    {props.store.pendingCount} pending, {props.store.completedCount} completed
+  </div>
+))
+
 const AppView = observer(props => (
   <div>
     <button onClick={e => props.store.addTodo(randomId(), "New Task")}>
@@ -95,6 +108,7 @@ const AppView = observer(props => (
     {values(props.store.todos).map(todo => (
       <TodoView todo = {todo} />
     ))}
+    <TodoCounterView store={props.store} />
   </div>
 ));
 
