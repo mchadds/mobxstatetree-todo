@@ -21,6 +21,7 @@ const Todo = types
     // set the user for the task
     function setUser(user) {
       if (user === "") {
+        // when no user is selected set user to null
         self.user = null
       }
       else {
